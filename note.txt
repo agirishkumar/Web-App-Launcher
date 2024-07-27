@@ -1,3 +1,10 @@
 curl -v -X POST -H "Content-Type: application/json" -d '{"username":"testuser","password":"password123"}' http://localhost:5000/api/auth/login
 
 curl -v -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NmE1NGMyNjE2ZGMzMjViZGMyZDNlNDMiLCJpYXQiOjE3MjIxMDg5NjZ9.eFju0-oA82eJLgFNZfwpaEqGZ3v5zEJo1A4j0bqGRvc" http://localhost:5000/api/auth/me
+
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NmE1NGMyNjE2ZGMzMjViZGMyZDNlNDMiLCJpYXQiOjE3MjIxMDg5NjZ9.eFju0-oA82eJLgFNZfwpaEqGZ3v5zEJo1A4j0bqGRvc" -d '{"name":"Firefox","command":"firefox"}' http://localhost:5000/api/apps/launch
+
+curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NmE1NGMyNjE2ZGMzMjViZGMyZDNlNDMiLCJpYXQiOjE3MjIxMDg5NjZ9.eFju0-oA82eJLgFNZfwpaEqGZ3v5zEJo1A4j0bqGRvc" http://localhost:5000/api/apps/user
+
+curl -X POST -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NmE1NGMyNjE2ZGMzMjViZGMyZDNlNDMiLCJpYXQiOjE3MjIxMDg5NjZ9.eFju0-oA82eJLgFNZfwpaEqGZ3v5zEJo1A4j0bqGRvc" http://localhost:5000/api/apps/66a54e238f3148b456a3bb45/stop
+

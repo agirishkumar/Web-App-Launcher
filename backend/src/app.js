@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
+const appRoutes = require('./routes/appRoutes');
 
 const app = express();
 
@@ -18,6 +19,7 @@ mongoose.connect(process.env.MONGODB_URI, {
 .catch(err => console.error('Could not connect to MongoDB', err));
 
 app.use('/api/auth', authRoutes);
+app.use('/api/apps', appRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Web App Launcher API' });
