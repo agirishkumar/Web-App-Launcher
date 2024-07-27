@@ -8,5 +8,9 @@
   },
   "keywords": [],
   "author": "Girish Kumar Adari",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2"
+  }
 }
