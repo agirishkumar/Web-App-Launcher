@@ -1,0 +1,12 @@
+{
+  "name": "web-app-launcher",
+  "version": "1.0.0",
+  "description": "A web-based application launcher with user authentication.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Girish Kumar Adari",
+  "license": "ISC"
+}
