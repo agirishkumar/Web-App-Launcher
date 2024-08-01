@@ -1,22 +1,39 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const http = require('http');
+const httpProxy = require('http-proxy');
 require('dotenv').config();
-
 const authRoutes = require('./routes/authRoutes');
 const appRoutes = require('./routes/appRoutes');
 
 const app = express();
+const server = http.createServer(app);
+const proxy = httpProxy.createProxyServer({ 
+  ws: true,
+  xfwd: true // Add this to preserve original client IP
+});
 
-app.use(cors());
+// Error handling for proxy
+proxy.on('error', (err, req, res) => {
+  console.error('Proxy error:', err);
+  if (res.writeHead) {
+    res.writeHead(500, { 'Content-Type': 'text/plain' });
+    res.end('Proxy error');
+  }
+});
+
+// CORS configuration
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000', // Adjust this to your frontend URL
+  credentials: true
+}));
+
 app.use(express.json());
 
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('Connected to MongoDB'))
-.catch(err => console.error('Could not connect to MongoDB', err));
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('Could not connect to MongoDB', err));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/apps', appRoutes);
@@ -25,7 +42,37 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Web App Launcher API' });
 });
 
+// WebSocket proxy
+server.on('upgrade', (req, socket, head) => {
+  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  console.log(`Received upgrade request for URL: ${req.url}`);
+  console.log(`Parsed URL: ${parsedUrl}`);
+  const targetPort = parsedUrl.searchParams.get('port');
+  
+  if (targetPort) {
+    console.log(`Proxying WebSocket connection to port ${targetPort}`);
+    proxy.ws(req, socket, head, { 
+      target: `ws://localhost:${targetPort}`,
+      ignorePath: true
+    }, (err) => {
+      if (err) {
+        console.error('WebSocket proxy error:', err);
+        socket.destroy();
+      }
+    });
+  } else {
+    console.log('No port specified for WebSocket connection');
+    socket.destroy();
+  }
+});
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send('Something broke!');
 });
