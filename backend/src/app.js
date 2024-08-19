@@ -45,20 +45,28 @@ app.get('/', (req, res) => {
 // WebSocket proxy
 server.on('upgrade', (req, socket, head) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
-  console.log(`Received upgrade request for URL: ${req.url}`);
-  console.log(`Parsed URL: ${parsedUrl}`);
   const targetPort = parsedUrl.searchParams.get('port');
   
   if (targetPort) {
     console.log(`Proxying WebSocket connection to port ${targetPort}`);
     proxy.ws(req, socket, head, { 
       target: `ws://localhost:${targetPort}`,
-      ignorePath: true
+      ws: true,
+      binary: true
     }, (err) => {
       if (err) {
         console.error('WebSocket proxy error:', err);
-        socket.destroy();
+        socket.end('HTTP/1.1 502 Bad Gateway\r\n\r\n');
       }
+    });
+
+    // Add these event listeners
+    socket.on('error', (error) => {
+      console.error('Socket error:', error);
+    });
+
+    socket.on('close', (hadError) => {
+      console.log('Socket closed. Had error:', hadError);
     });
   } else {
     console.log('No port specified for WebSocket connection');

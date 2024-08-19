@@ -8,8 +8,9 @@ exports.launchApp = async (req, res) => {
       name: req.body.name,
       command: req.body.command,
       user: req.user._id,
-      state: 'running'
+      state: 'starting'
     });
+
     console.log(`Launching app: ${app.command}`);
 
     const container = await docker.createContainer({
@@ -19,37 +20,35 @@ exports.launchApp = async (req, res) => {
         PortBindings: { '5900/tcp': [{ HostPort: '0' }] }
       },
       Env: ["DISPLAY=:99"],
-      Tty: true,
-      OpenStdin: true,
-      StdinOnce: false
+      Cmd: ["/bin/bash", "-c", "/start-firefox.sh"]
     });
+
     console.log(`Container created with ID: ${container.id}`);
 
     await container.start();
     console.log(`Container started`);
 
     const containerData = await container.inspect();
-    console.log(`Container inspected:`, JSON.stringify(containerData, null, 2));
+    console.log(`Container inspected:`, containerData);
 
     const port = containerData.NetworkSettings.Ports['5900/tcp'][0].HostPort;
-    if (!port) {
-      throw new Error('Failed to assign a port to the container');
-    }
     console.log(`VNC port assigned: ${port}`);
 
     app.containerId = container.id;
     app.port = port;
+
+    // Wait for VNC server to be ready
+    await new Promise(resolve => setTimeout(resolve, 15000));
+
+    app.state = 'running';
     await app.save();
-    console.log(`App saved to database: ${JSON.stringify(app.toObject(), null, 2)}`);
+    
+    console.log(`App saved to database: ${JSON.stringify(app)}`);
 
-    // Attach to the container to see its logs
-    const stream = await container.attach({stream: true, stdout: true, stderr: true});
-    stream.pipe(process.stdout);
-
-    res.status(201).send(app.toObject());
+    res.status(201).send(app);
   } catch (error) {
     console.error('Error launching app:', error);
-    res.status(400).send({ error: error.message });
+    res.status(400).send(error);
   }
 };
   
@@ -81,7 +80,7 @@ exports.launchApp = async (req, res) => {
   };
 
 
-exports.stopApp = async (req, res) => {
+  exports.stopApp = async (req, res) => {
     try {
       const app = await App.findOne({ _id: req.params.id, user: req.user._id });
       if (!app) {
@@ -92,7 +91,15 @@ exports.stopApp = async (req, res) => {
       
       if (app.containerId) {
         const container = docker.getContainer(app.containerId);
-        await container.stop();
+        try {
+          await container.stop();
+        } catch (error) {
+          if (error.statusCode === 304) {
+            console.log('Container was already stopped');
+          } else {
+            throw error;
+          }
+        }
         await container.remove();
       } else {
         console.log('No container ID found for the app');
